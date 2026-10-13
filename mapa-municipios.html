@@ -29,6 +29,8 @@
   --faixa-bg: #ffffff;
   --faixa-fg: #3d4643;
   --faixa-linha: #d9dedc;
+  --aviso-bg: rgb(20 24 23 / .8);
+  --aviso-fg: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -103,6 +105,14 @@ h1 { margin: 0; font: 800 22px/1.1 var(--f-display); letter-spacing: -.01em; tex
 .opcoes input { accent-color: var(--fg); margin: 0; }
 .fonte { font-size: 11px; color: var(--muted); line-height: 1.45; }
 
+.aviso-dedos {
+  position: absolute; z-index: 1500; inset: 0; display: grid; place-items: center; pointer-events: none;
+  background: var(--aviso-bg); color: var(--aviso-fg); font: 700 16px/1.3 var(--f-display);
+  text-align: center; padding-inline: 32px; transition: opacity .25s;
+}
+.aviso-dedos.oculto { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .aviso-dedos { transition: none; } }
+
 #carregando {
   position: absolute; inset: 0; z-index: 2000; display: grid; place-items: center;
   background: color-mix(in srgb, var(--bg) 80%, transparent);
@@ -160,6 +170,8 @@ h1 { margin: 0; font: 800 22px/1.1 var(--f-display); letter-spacing: -.01em; tex
     </p>
   </div>
 </details>
+
+<div id="aviso-dedos" class="aviso-dedos oculto" aria-hidden="true">Use dois dedos para mover o mapa</div>
 
 <div id="carregando">montando 5.570 municípios…</div>
 </main>
@@ -420,6 +432,23 @@ L.control.zoom({ position: "bottomright" }).addTo(mapa);
 if (window.self !== window.top) {
   mapa.scrollWheelZoom.disable();
   mapa.once("click focus", () => mapa.scrollWheelZoom.enable());
+}
+// Em tela de toque, um dedo rola a página e dois dedos movem e aproximam o mapa,
+// para o mapa não atrapalhar a leitura. Um toque simples continua abrindo o resultado.
+if (matchMedia("(pointer: coarse)").matches) {
+  mapa.dragging.disable();
+  const aviso = document.getElementById("aviso-dedos");
+  let espera;
+  const el = mapa.getContainer();
+  el.addEventListener("touchmove", ev => {
+    if (ev.touches.length !== 1) { aviso.classList.add("oculto"); return; }
+    aviso.classList.remove("oculto");
+    clearTimeout(espera);
+    espera = setTimeout(() => aviso.classList.add("oculto"), 1200);
+  }, { passive: true });
+  el.addEventListener("touchend", ev => {
+    if (!ev.touches.length) { clearTimeout(espera); espera = setTimeout(() => aviso.classList.add("oculto"), 800); }
+  }, { passive: true });
 }
 
 const base = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {

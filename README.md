@@ -47,8 +47,10 @@ Cole um dos códigos abaixo no HTML da página (no WordPress, use um bloco "HTML
   style="width:100%;height:min(80vh,720px);border:0" loading="lazy" allowfullscreen></iframe>
 ```
 
-Dentro de um iframe, a roda do mouse só passa a dar zoom depois que o leitor clica no mapa, para não prender a
-rolagem da página. Em espaços com menos de 560 px de altura ou 600 px de largura, o painel de legenda começa
+No celular e no tablet, um dedo rola a página e o mapa só se move e aproxima com **dois dedos**; ao arrastar
+com um dedo, aparece o aviso "Use dois dedos para mover o mapa". Um toque simples continua mostrando o
+resultado do lugar. No computador, dentro de um iframe, a roda do mouse só passa a dar zoom depois que o
+leitor clica no mapa. Assim o mapa não atrapalha a leitura da página. Em espaços com menos de 560 px de altura ou 600 px de largura, o painel de legenda começa
 fechado e abre com um toque no título.
 
 **Atenção ao tráfego.** O mapa de fundo vem dos servidores públicos do OpenStreetMap, que têm uma
