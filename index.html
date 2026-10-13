@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Um Ponto, Um Voto · 2026</title>
+<meta name="description" content="Mapas de pontos dos votos para presidente no 1º turno de 2026: cada ponto é um voto.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Página de entrada: faixa institucional, título, dois cartões (um por mapa) com link e código de embed */
+:root {
+  --bg: #eef0ee; --panel: #fbfcfb; --fg: #1b211f; --muted: #5d6763; --line: #d5dbd8; --focus: #1f5fd6;
+  --faixa-bg: #ffffff; --faixa-fg: #3d4643; --faixa-linha: #d9dedc;
+  --c-lula: #e3262b; --c-flavio: #1f5fd6; --c-cury: #17a34a; --c-renan: #f2c200; --c-outros: #8b928f;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #101413; --panel: #171c1b; --fg: #e7ece9; --muted: #96a19c; --line: #2b3331; --focus: #6d9cff; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #101413; --panel: #171c1b; --fg: #e7ece9; --muted: #96a19c; --line: #2b3331; --focus: #6d9cff; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--f-display); }
+.faixa {
+  display: flex; align-items: center; gap: 12px; padding: calc(5px + env(safe-area-inset-top, 0px)) 16px 5px;
+  background: var(--faixa-bg); color: var(--faixa-fg); border-bottom: 1px solid var(--faixa-linha);
+}
+.faixa a { flex: none; display: block; line-height: 0; }
+.faixa img { height: 26px; width: auto; }
+.faixa p { margin: 0; font-size: 11px; line-height: 1.35; min-width: 0; }
+main { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 56px; display: grid; gap: 32px; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 8px 0 12px; font: 800 clamp(30px, 6vw, 48px)/1.05 var(--f-display); letter-spacing: -.02em; text-wrap: balance; }
+.lead { margin: 0; max-width: 62ch; color: var(--muted); }
+.barra { display: flex; height: 8px; border-radius: 4px; overflow: hidden; max-width: 420px; margin-top: 20px; }
+.barra span { background: var(--c); }
+.mapas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; }
+.cartao { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.cartao h2 { margin: 0; font: 700 20px/1.2 var(--f-display); }
+.cartao p { margin: 0; color: var(--muted); font-size: 14px; }
+.abrir {
+  justify-self: start; display: inline-block; padding: 9px 14px; border-radius: 4px; text-decoration: none;
+  background: var(--fg); color: var(--bg); font-weight: 700; font-size: 14px;
+}
+.abrir:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+label.eyebrow { display: block; margin-top: 4px; }
+textarea {
+  width: 100%; min-height: 104px; resize: vertical; padding: 10px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); color: var(--fg); font: 12px/1.45 var(--f-mono);
+}
+button {
+  justify-self: start; padding: 7px 12px; border: 1px solid var(--line); border-radius: 4px; cursor: pointer;
+  background: transparent; color: var(--fg); font: 500 13px var(--f-display);
+}
+.rodape { font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+.rodape a { color: inherit; }
+@media (max-width: 520px) { .faixa img { height: 22px; } .faixa p { font-size: 10px; } }
+</style>
+</head>
+<body>
+<header class="faixa">
+  <a href="https://estel.tec.br" target="_blank" rel="noopener"><img src="assets/estel-logo.png" alt="Estel Tecnologia" width="78" height="26"></a>
+  <p>Produção independente e exclusiva da Estel Tecnologia. Esta ferramenta não tem relação com a campanha oficial de Lula, com o PT ou com qualquer partido, federação, coligação ou candidatura, e não foi encomendada nem paga por eles.</p>
+</header>
+
+<main>
+  <section>
+    <span class="eyebrow">Presidente · 1º turno · 4 de outubro de 2026</span>
+    <h1>Um ponto, um voto</h1>
+    <p class="lead">Os 118,98 milhões de votos nominais registrados no Brasil, cada um desenhado como um ponto.
+      Lula em vermelho, Flávio Bolsonaro em azul, Augusto Cury em verde, Renan Santos em amarelo e os demais
+      candidatos em cinza. Com o Brasil inteiro na tela, cada ponto representa cerca de 100 votos; a partir do
+      zoom 15, cada ponto é um voto.</p>
+    <div class="barra" aria-hidden="true">
+      <span style="--c:var(--c-lula);width:45.2%"></span><span style="--c:var(--c-flavio);width:47.0%"></span>
+      <span style="--c:var(--c-cury);width:2.9%"></span><span style="--c:var(--c-renan);width:2.2%"></span>
+      <span style="--c:var(--c-outros);width:2.7%"></span>
+    </div>
+  </section>
+
+  <section class="mapas">
+    <article class="cartao">
+      <span class="eyebrow">Versão 1</span>
+      <h2>Por município</h2>
+      <p>Cada voto é sorteado em qualquer ponto do município onde foi registrado.</p>
+      <a class="abrir" href="mapa-municipios.html">Abrir o mapa</a>
+      <label class="eyebrow" for="embed-municipios">Código para embutir</label>
+      <textarea id="embed-municipios" readonly></textarea>
+      <button type="button" data-copiar="embed-municipios">Copiar código</button>
+    </article>
+    <article class="cartao">
+      <span class="eyebrow">Versão 2</span>
+      <h2>Por estado</h2>
+      <p>Cada voto é sorteado em qualquer ponto do estado onde foi registrado.</p>
+      <a class="abrir" href="mapa-estados.html">Abrir o mapa</a>
+      <label class="eyebrow" for="embed-estados">Código para embutir</label>
+      <textarea id="embed-estados" readonly></textarea>
+      <button type="button" data-copiar="embed-estados">Copiar código</button>
+    </article>
+  </section>
+
+  <footer class="rodape">
+    <span>Fontes: TSE, votação por seção 2026 (dados abertos); IBGE, malhas municipal e estadual; mapa base © OpenStreetMap.</span>
+    <span><a href="https://github.com/rafadaguia/mapa-por-pontos-eleicoes-2026/blob/main/METODOLOGIA.md">Metodologia</a> ·
+      <a href="https://github.com/rafadaguia/mapa-por-pontos-eleicoes-2026">Código no GitHub</a></span>
+  </footer>
+</main>
+
+<script>
+const base = new URL(".", location.href).href;
+const titulos = { municipios: "por município", estados: "por estado" };
+for (const id of ["municipios", "estados"]) {
+  document.getElementById("embed-" + id).value =
+    `<iframe src="${base}mapa-${id}.html" title="Um ponto, um voto: presidente 2026 ${titulos[id]}" ` +
+    `style="width:100%;height:min(80vh,720px);border:0" loading="lazy" allowfullscreen></iframe>`;
+}
+document.querySelectorAll("[data-copiar]").forEach(bt => bt.addEventListener("click", () => {
+  const ta = document.getElementById(bt.dataset.copiar);
+  const feito = () => { bt.textContent = "Copiado"; setTimeout(() => bt.textContent = "Copiar código", 1800); };
+  navigator.clipboard.writeText(ta.value).then(feito).catch(() => { ta.select(); document.execCommand("copy"); feito(); });
+}));
+</script>
+</body>
+</html>
