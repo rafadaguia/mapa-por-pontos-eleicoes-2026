@@ -5,8 +5,19 @@ voto ganha uma posição no mapa e o que os pontos podem e não podem dizer.
 
 ## 1. O que o mapa mostra
 
-Cada ponto é **um voto nominal para Presidente no 1º turno de 2026** (4 de outubro), registrado numa seção
-eleitoral no Brasil. A cor é a do candidato que recebeu o voto:
+Cada ponto é **um voto nominal para Presidente em 2026**, registrado numa seção eleitoral no Brasil. Há
+mapas do 1º turno (4 de outubro) e do 2º turno (25 de outubro), cada um em duas versões: por município e por
+estado. A cor é a do candidato que recebeu o voto.
+
+**2º turno**
+
+| Cor | Candidato | Votos no mapa | % dos votos no mapa |
+|---|---|---:|---:|
+| Vermelho | Lula | 64.056.078 | 51,8% |
+| Azul | Flávio Bolsonaro | 59.654.544 | 48,2% |
+| | **Total** | **123.710.622** | |
+
+**1º turno**
 
 | Cor | Candidato | Votos no mapa | % dos votos no mapa |
 |---|---|---:|---:|
@@ -22,18 +33,37 @@ Wilson Grassi e Rui Costa Pimenta.
 
 **Ficam fora do mapa:**
 - votos **brancos e nulos**, que não são votos em candidato;
-- os **331.005 votos do exterior**, que não têm um lugar no território brasileiro onde ser desenhados.
+- os votos do **exterior** (331.005 no 1º turno e 371.651 no 2º), que não têm um lugar no território
+  brasileiro onde ser desenhados.
 
 ## 2. Fonte dos votos
+
+### 1º turno
 
 Os votos vêm do arquivo de dados abertos do TSE **`votacao_secao_2026_BR`**, que traz uma linha por seção
 eleitoral e candidato (gerado em 06/10/2026). Somando todas as seções, inclusive as do exterior, o total por
 candidato coincide com a totalização oficial do TSE para Lula, Flávio Bolsonaro, Augusto Cury e Renan Santos.
 
-Em cada seção, os votos foram agrupados em cinco categorias (as quatro candidaturas destacadas e "outros") e
-somados por **município** (mapa por município) ou por **unidade da federação** (mapa por estado). O código de
-município do TSE foi convertido para o código do IBGE usando os arquivos de resultado por município do próprio
-TSE.
+### 2º turno
+
+Quando os mapas do 2º turno foram feitos, a votação por seção do 2º turno ainda não estava nos dados
+abertos do TSE. A fonte são os **arquivos oficiais de divulgação de resultados** (`resultados.tse.jus.br`,
+eleição 6258): um arquivo por par município-zona eleitoral, 6.292 no total, todos gerados em 25/10/2026.
+
+O script confere que **todas as zonas estão com totalização final e 100% das seções apuradas** antes de
+usar os números. A soma das zonas de cada UF coincide com o arquivo da UF, e a soma de todas coincide com o
+total nacional divulgado pelo TSE: 64.256.232 votos para Lula e 59.826.041 para Flávio Bolsonaro, contando
+o exterior.
+
+Para os mapas, a zona é um nível intermediário: os votos das zonas são somados por município e por UF, que
+é o que os mapas usam. O resultado é o mesmo que se obteria somando as seções.
+
+### Nos dois turnos
+
+No 1º turno, os votos foram agrupados em cinco categorias (as quatro candidaturas destacadas e "outros");
+no 2º, em duas (Lula e Flávio Bolsonaro). Depois foram somados por **município** (mapa por município) ou por
+**unidade da federação** (mapa por estado). O código de município do TSE foi convertido para o código do IBGE
+usando os arquivos de resultado por município do próprio TSE.
 
 ## 3. Onde cada voto é desenhado
 
@@ -118,6 +148,10 @@ nenhum candidato fica sistematicamente por cima dos outros.
 ## 7. Reprodutibilidade
 
 O código que gera os dados está em `scripts/`. Ele lê os arquivos do TSE, soma os votos, simplifica os
-contornos e grava `dados/municipios.js` e `dados/estados.js`. A triangulação, a subdivisão, a repartição e o
-sorteio dos pontos acontecem no navegador (`mapa-municipios.html` e `mapa-estados.html`), de forma
-determinística: qualquer pessoa que abra o mapa vê exatamente os mesmos pontos.
+contornos e grava os arquivos de `dados/`: `municipios.js` e `estados.js` para o 1º turno
+(`preparar_dados.py` e `preparar_dados_estados.py`) e `municipios-2t.js` e `estados-2t.js` para o 2º
+(`preparar_dados_2t.py`). Os dois turnos usam os mesmos contornos e o mesmo código de geometria.
+
+A triangulação, a subdivisão, a repartição e o sorteio dos pontos acontecem no navegador
+(`mapa-*.html`), de forma determinística: qualquer pessoa que abra o mapa vê exatamente os mesmos pontos.
+Os pontos de um turno não correspondem aos do outro: o mesmo eleitor não está no mesmo lugar nos dois mapas.

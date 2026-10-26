@@ -87,11 +87,13 @@ def poligonos(geom):
     return out
 
 
-def main():
-    votos = ler_votos()
-    muns = ler_municipios()
-    print("votos nominais:", int(votos.to_numpy().sum()))
+def gravar_municipios(votos, cats, saida):
+    """Grava o arquivo de dados por município.
 
+    votos: DataFrame indexado pelo código TSE do município, uma coluna por categoria de `cats`.
+    Municípios fora da tabela do TSE (exterior) ficam de fora.
+    """
+    muns = ler_municipios()
     malha = {f["properties"]["codarea"]: f["geometry"] for f in json.load(open(MALHA))["features"]}
     locais = pd.read_parquet(LOCAIS, columns=["cd_mun_tse", "lat", "lon"]).dropna()
 
@@ -115,20 +117,29 @@ def main():
             estrutura.append([len(a) for a in aneis])
             coords.extend(aneis)
         nome = info.municipio.title() if info.municipio.isupper() else info.municipio
-        munis.append([nome, info.uf, [int(r[c]) for c in CATS], estrutura])
+        munis.append([nome, info.uf, [int(r[c]) for c in cats], estrutura])
+    print("municípios:", len(munis))
 
+    totais = {c: int(votos.loc[votos.index.isin(muns.index), c].sum()) for c in cats}
+    escrever(saida, totais, munis, coords)
+
+
+def escrever(saida, totais, munis, coords):
     # Coordenadas em décimos de milésimo de grau (~11 m), codificadas como diferenças
     q = np.round(np.vstack(coords) * 1e4).astype(np.int64)
     d = np.diff(q, axis=0, prepend=np.zeros((1, 2), np.int64)).astype("<i4")
-    verts_b64 = base64.b64encode(gzip.compress(d.tobytes(), 9)).decode()
-    print("municípios:", len(munis), "vértices:", len(q))
-
-    totais = {c: int(votos.loc[votos.index.isin(muns.index), c].sum()) for c in CATS}
-    SAIDA.write_text(
+    verts_b64 = base64.b64encode(gzip.compress(d.tobytes(), 9, mtime=0)).decode()
+    saida.write_text(
         f"window.DADOS={{totais:{json.dumps(totais)},"
         f"munis:{json.dumps(munis, ensure_ascii=False, separators=(',', ':'))},"
         f"verts:\"{verts_b64}\"}};\n")
-    print(totais, f"{SAIDA.stat().st_size / 1e6:.1f} MB")
+    print("vértices:", len(q), totais, f"{saida.stat().st_size / 1e6:.2f} MB")
+
+
+def main():
+    votos = ler_votos()
+    print("votos nominais:", int(votos.to_numpy().sum()))
+    gravar_municipios(votos, CATS, SAIDA)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Um Ponto, Um Voto · 2026</title>
-<meta name="description" content="Mapas de pontos dos votos para presidente no 1º turno de 2026: cada ponto é um voto.">
+<meta name="description" content="Mapas de pontos dos votos para presidente no 1º e no 2º turno de 2026: cada ponto é um voto.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -37,7 +37,12 @@ h1 { margin: 8px 0 12px; font: 800 clamp(30px, 6vw, 48px)/1.05 var(--f-display);
 .barra span { background: var(--c); }
 .mapas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; }
 .cartao { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 12px; min-width: 0; align-content: start; }
-.cartao h2 { margin: 0; font: 700 20px/1.2 var(--f-display); }
+.turno { display: grid; gap: 16px; }
+.turno-cab { display: grid; gap: 6px; }
+.turno-cab h2 { margin: 0; font: 800 28px/1.1 var(--f-display); letter-spacing: -.01em; }
+.turno-cab p { margin: 0; color: var(--muted); max-width: 62ch; }
+.turno-cab .barra { margin-top: 6px; }
+.cartao h3 { margin: 0; font: 700 20px/1.2 var(--f-display); }
 .cartao p { margin: 0; color: var(--muted); font-size: 14px; }
 .abrir {
   justify-self: start; display: inline-block; padding: 9px 14px; border-radius: 4px; text-decoration: none;
@@ -66,23 +71,60 @@ button {
 
 <main>
   <section>
-    <span class="eyebrow">Presidente · 1º turno · 4 de outubro de 2026</span>
+    <span class="eyebrow">Presidente · eleições de 2026</span>
     <h1>Um ponto, um voto</h1>
-    <p class="lead">Os 118,98 milhões de votos nominais registrados no Brasil, cada um desenhado como um ponto.
-      Lula em vermelho, Flávio Bolsonaro em azul, Augusto Cury em verde, Renan Santos em amarelo e os demais
-      candidatos em cinza. Com o Brasil inteiro na tela, cada ponto representa cerca de 100 votos; a partir do
-      zoom 15, cada ponto é um voto.</p>
-    <div class="barra" aria-hidden="true">
-      <span style="--c:var(--c-lula);width:45.2%"></span><span style="--c:var(--c-flavio);width:47.0%"></span>
-      <span style="--c:var(--c-cury);width:2.9%"></span><span style="--c:var(--c-renan);width:2.2%"></span>
-      <span style="--c:var(--c-outros);width:2.7%"></span>
+    <p class="lead">Cada voto nominal para presidente desenhado como um ponto no mapa do Brasil. Com o país
+      inteiro na tela, cada ponto representa cerca de 100 votos; a partir do zoom 15, cada ponto é um voto.
+      Há uma versão em que os votos se espalham pelo município e outra em que se espalham pelo estado.</p>
+  </section>
+
+  <section class="turno" aria-labelledby="t2">
+    <div class="turno-cab">
+      <span class="eyebrow">25 de outubro de 2026</span>
+      <h2 id="t2">2º turno</h2>
+      <p>123,71 milhões de votos: Lula em vermelho (51,8%) e Flávio Bolsonaro em azul (48,2%).</p>
+      <div class="barra" aria-hidden="true">
+        <span style="--c:var(--c-lula);width:51.8%"></span><span style="--c:var(--c-flavio);width:48.2%"></span>
+      </div>
+    </div>
+    <div class="mapas">
+    <article class="cartao">
+      <span class="eyebrow">2º turno · versão 1</span>
+      <h3>Por município</h3>
+      <p>Cada voto é sorteado em qualquer ponto do município onde foi registrado.</p>
+      <a class="abrir" href="mapa-municipios-2t.html">Abrir o mapa</a>
+      <label class="eyebrow" for="embed-municipios-2t">Código para embutir</label>
+      <textarea id="embed-municipios-2t" readonly></textarea>
+      <button type="button" data-copiar="embed-municipios-2t">Copiar código</button>
+    </article>
+    <article class="cartao">
+      <span class="eyebrow">2º turno · versão 2</span>
+      <h3>Por estado</h3>
+      <p>Cada voto é sorteado em qualquer ponto do estado onde foi registrado.</p>
+      <a class="abrir" href="mapa-estados-2t.html">Abrir o mapa</a>
+      <label class="eyebrow" for="embed-estados-2t">Código para embutir</label>
+      <textarea id="embed-estados-2t" readonly></textarea>
+      <button type="button" data-copiar="embed-estados-2t">Copiar código</button>
+    </article>
     </div>
   </section>
 
-  <section class="mapas">
+  <section class="turno" aria-labelledby="t1">
+    <div class="turno-cab">
+      <span class="eyebrow">4 de outubro de 2026</span>
+      <h2 id="t1">1º turno</h2>
+      <p>118,98 milhões de votos: Lula em vermelho, Flávio Bolsonaro em azul, Augusto Cury em verde,
+        Renan Santos em amarelo e os demais candidatos em cinza.</p>
+      <div class="barra" aria-hidden="true">
+        <span style="--c:var(--c-lula);width:45.2%"></span><span style="--c:var(--c-flavio);width:47.0%"></span>
+        <span style="--c:var(--c-cury);width:2.9%"></span><span style="--c:var(--c-renan);width:2.2%"></span>
+        <span style="--c:var(--c-outros);width:2.7%"></span>
+      </div>
+    </div>
+    <div class="mapas">
     <article class="cartao">
-      <span class="eyebrow">Versão 1</span>
-      <h2>Por município</h2>
+      <span class="eyebrow">1º turno · versão 1</span>
+      <h3>Por município</h3>
       <p>Cada voto é sorteado em qualquer ponto do município onde foi registrado.</p>
       <a class="abrir" href="mapa-municipios.html">Abrir o mapa</a>
       <label class="eyebrow" for="embed-municipios">Código para embutir</label>
@@ -90,18 +132,19 @@ button {
       <button type="button" data-copiar="embed-municipios">Copiar código</button>
     </article>
     <article class="cartao">
-      <span class="eyebrow">Versão 2</span>
-      <h2>Por estado</h2>
+      <span class="eyebrow">1º turno · versão 2</span>
+      <h3>Por estado</h3>
       <p>Cada voto é sorteado em qualquer ponto do estado onde foi registrado.</p>
       <a class="abrir" href="mapa-estados.html">Abrir o mapa</a>
       <label class="eyebrow" for="embed-estados">Código para embutir</label>
       <textarea id="embed-estados" readonly></textarea>
       <button type="button" data-copiar="embed-estados">Copiar código</button>
     </article>
+    </div>
   </section>
 
   <footer class="rodape">
-    <span>Fontes: TSE, votação por seção 2026 (dados abertos); IBGE, malhas municipal e estadual; mapa base © OpenStreetMap.</span>
+    <span>Fontes: TSE, votação por seção do 1º turno (dados abertos) e resultado oficial do 2º turno por zona eleitoral; IBGE, malhas municipal e estadual; mapa base © OpenStreetMap.</span>
     <span><a href="https://github.com/rafadaguia/mapa-por-pontos-eleicoes-2026/blob/main/METODOLOGIA.md">Metodologia</a> ·
       <a href="https://github.com/rafadaguia/mapa-por-pontos-eleicoes-2026">Código no GitHub</a></span>
   </footer>
@@ -109,8 +152,11 @@ button {
 
 <script>
 const base = new URL(".", location.href).href;
-const titulos = { municipios: "por município", estados: "por estado" };
-for (const id of ["municipios", "estados"]) {
+const titulos = {
+  "municipios-2t": "2º turno por município", "estados-2t": "2º turno por estado",
+  municipios: "1º turno por município", estados: "1º turno por estado",
+};
+for (const id of Object.keys(titulos)) {
   document.getElementById("embed-" + id).value =
     `<iframe src="${base}mapa-${id}.html" title="Um ponto, um voto: presidente 2026 ${titulos[id]}" ` +
     `style="width:100%;height:min(80vh,720px);border:0" loading="lazy" allowfullscreen></iframe>`;

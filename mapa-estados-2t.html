@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Um Ponto, Um Voto · Estados 2º Turno</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Mapa em tela cheia; painel flutuante tipo "boletim de urna" no canto superior esquerdo */
+:root {
+  --bg: #eef0ee;
+  --panel: #fbfcfb;
+  --fg: #1b211f;
+  --muted: #5d6763;
+  --line: #d5dbd8;
+  --focus: #1f5fd6;
+  --tile-filter: grayscale(.9) contrast(.95) brightness(1.04);
+  --tile-opacity: .7;
+  --c-lula: #e3262b;
+  --c-flavio: #1f5fd6;
+  --c-cury: #17a34a;
+  --c-renan: #f2c200;
+  --c-outros: #8b928f;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  /* faixa institucional: clara nos dois temas, para o logo preto da Estel */
+  --faixa-bg: #ffffff;
+  --faixa-fg: #3d4643;
+  --faixa-linha: #d9dedc;
+  --aviso-bg: rgb(20 24 23 / .8);
+  --aviso-fg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101413; --panel: #171c1b; --fg: #e7ece9; --muted: #96a19c; --line: #2b3331; --focus: #6d9cff;
+    --tile-filter: invert(1) hue-rotate(180deg) grayscale(.85) brightness(.8) contrast(.9);
+    --tile-opacity: .85; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101413; --panel: #171c1b; --fg: #e7ece9; --muted: #96a19c; --line: #2b3331; --focus: #6d9cff;
+  --tile-filter: invert(1) hue-rotate(180deg) grayscale(.85) brightness(.8) contrast(.9);
+  --tile-opacity: .85; color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.4 var(--f-display); display: flex; flex-direction: column; }
+.faixa {
+  flex: none; display: flex; align-items: center; gap: 12px;
+  padding: calc(5px + env(safe-area-inset-top, 0px)) 16px 5px;
+  background: var(--faixa-bg); color: var(--faixa-fg); border-bottom: 1px solid var(--faixa-linha);
+}
+.faixa a { flex: none; display: block; line-height: 0; border-radius: 2px; }
+.faixa a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.faixa img { height: 26px; width: auto; }
+.faixa p { margin: 0; font-size: 11px; line-height: 1.35; min-width: 0; }
+.area { position: relative; flex: 1; min-height: 0; }
+#mapa { position: absolute; inset: 0; background: var(--bg); }
+.leaflet-container { background: var(--bg); font-family: var(--f-display); }
+.base-osm.esmaecido { filter: var(--tile-filter); opacity: var(--tile-opacity); }
+.pontos { image-rendering: pixelated; }
+
+#painel {
+  position: absolute; z-index: 1000; top: 16px; left: 16px;
+  width: 300px; max-width: calc(100% - 32px); max-height: calc(100% - 32px); overflow: auto;
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 6px; box-shadow: 0 6px 24px rgb(0 0 0 / .14);
+}
+#painel summary {
+  list-style: none; cursor: pointer; padding: 14px 16px 12px; display: grid; gap: 2px;
+}
+#painel summary::-webkit-details-marker { display: none; }
+#painel summary:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font: 800 22px/1.1 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
+.corpo { padding: 0 16px 16px; display: grid; gap: 14px; }
+
+.legenda { display: grid; gap: 2px; margin: 0; padding: 0; border: 0; }
+.legenda legend { padding: 0; margin-bottom: 6px; }
+.cand {
+  display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 10px;
+  padding: 6px 6px; margin: 0 -6px; border-radius: 4px; cursor: pointer;
+}
+.cand:hover { background: color-mix(in srgb, var(--fg) 6%, transparent); }
+.cand input { position: absolute; opacity: 0; pointer-events: none; }
+.cand:has(input:focus-visible) { outline: 2px solid var(--focus); }
+.bola { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgb(0 0 0 / .15); }
+.cand:has(input:not(:checked)) .bola { background: transparent; box-shadow: inset 0 0 0 2px var(--c); }
+.cand:has(input:not(:checked)) .nome, .cand:has(input:not(:checked)) .num { opacity: .45; }
+.nome { font-weight: 700; }
+.num { font: 400 12px/1.25 var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.num b { display: block; font-weight: 500; color: var(--fg); font-size: 13px; }
+.barra { display: flex; height: 6px; border-radius: 3px; overflow: hidden; }
+.barra span { background: var(--c); }
+
+.escala {
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: baseline;
+  padding-top: 12px; border-top: 1px solid var(--line);
+}
+.escala .valor { font: 500 18px/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.escala .dica { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+.opcoes { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.opcoes input { accent-color: var(--fg); margin: 0; }
+.fonte { font-size: 11px; color: var(--muted); line-height: 1.45; }
+
+.aviso-dedos {
+  position: absolute; z-index: 1500; inset: 0; display: grid; place-items: center; pointer-events: none;
+  background: var(--aviso-bg); color: var(--aviso-fg); font: 700 16px/1.3 var(--f-display);
+  text-align: center; padding-inline: 32px; transition: opacity .25s;
+}
+.aviso-dedos.oculto { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .aviso-dedos { transition: none; } }
+
+#carregando {
+  position: absolute; inset: 0; z-index: 2000; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  font: 500 13px var(--f-mono); color: var(--muted); letter-spacing: .04em;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--fg); }
+.leaflet-popup-content { margin: 12px 14px; font: 13px/1.4 var(--f-display); min-width: 220px; }
+.pop h2 { margin: 0 0 2px; font: 700 14px/1.25 var(--f-display); }
+.pop .onde { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.pop table { width: 100%; border-collapse: collapse; font: 12px var(--f-mono); font-variant-numeric: tabular-nums; }
+.pop td { padding: 2px 0; }
+.pop td:nth-child(n+2) { text-align: right; padding-left: 10px; }
+.pop .bola { display: inline-block; width: 8px; height: 8px; margin-right: 6px; vertical-align: 1px; }
+.leaflet-control-attribution { font-size: 10px; }
+@media (max-width: 520px) {
+  .faixa { gap: 10px; }
+  .faixa img { height: 22px; }
+  .faixa p { font-size: 10px; }
+  #painel { width: auto; right: 16px; }
+  h1 { font-size: 19px; }
+}
+</style>
+</head>
+<body>
+<header class="faixa">
+  <a href="https://estel.tec.br" target="_blank" rel="noopener"><img src="assets/estel-logo.png" alt="Estel Tecnologia" width="78" height="26"></a>
+  <p>Produção independente e exclusiva da Estel Tecnologia. Esta ferramenta não tem relação com a campanha oficial de Lula, com o PT ou com qualquer partido, federação, coligação ou candidatura, e não foi encomendada nem paga por eles.</p>
+</header>
+
+<main class="area">
+<div id="mapa" role="application" aria-label="Mapa de votos para presidente, 2º turno de 2026"></div>
+
+<details id="painel" open>
+  <summary>
+    <span class="eyebrow">Presidente · 2º turno · por estado</span>
+    <h1>Um ponto, um voto</h1>
+  </summary>
+  <div class="corpo">
+    <div class="barra" id="barra" aria-hidden="true"></div>
+    <fieldset class="legenda" id="legenda">
+      <legend class="eyebrow">Toque para mostrar ou esconder</legend>
+    </fieldset>
+    <div class="escala" aria-live="polite">
+      <span class="eyebrow">Escala</span>
+      <span class="valor" id="escala">—</span>
+      <span class="dica" id="escala-dica"></span>
+    </div>
+    <label class="opcoes"><input type="checkbox" id="esmaecer" checked> Mapa de fundo esmaecido</label>
+    <p class="fonte">
+      Cada ponto é um voto nominal, sorteado em qualquer lugar do estado onde
+      foi registrado. A posição é aleatória e não indica onde o eleitor mora.
+      Clique no mapa para ver o resultado do estado. Brancos, nulos e exterior
+      ficam de fora. Fontes: TSE, resultado oficial do 2º turno por zona eleitoral; IBGE, malha das UFs.
+    </p>
+  </div>
+</details>
+
+<div id="aviso-dedos" class="aviso-dedos oculto" aria-hidden="true">Use dois dedos para mover o mapa</div>
+
+<div id="carregando">montando 27 estados…</div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js"></script>
+<script src="dados/estados-2t.js"></script>
+<script>
+"use strict";
+const CANDS = [
+  { id: "lula",   nome: "Lula",          cor: "#e3262b" },
+  { id: "flavio", nome: "Flávio",        cor: "#1f5fd6" },
+];
+const NC = CANDS.length;
+// Zoom em que cada ponto passa a ser exatamente um voto; abaixo dele, sorteia-se uma fração.
+const ZOOM_PLENO = 15;
+const fracao = z => Math.min(1, Math.pow(2, -0.6 * (ZOOM_PLENO - z)));
+const tamanhoPonto = z => z <= 9 ? 1 : z <= 12 ? 1.5 : z <= 14 ? 2 : z === 15 ? 2.5 : z === 16 ? 3 : 4;
+const VOTOS_MAX = 1500; // votos esperados por triângulo; acima disso o triângulo é dividido
+const visivel = CANDS.map(() => true);
+const fmt = new Intl.NumberFormat("pt-BR");
+const RAD = Math.PI / 180;
+
+// ---------- dados ----------
+async function gunzipB64(s) {
+  const bin = atob(s), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+// Triângulos: TV = lon/lat dos 3 vértices, TM = município, TC = votos por candidato
+let NT = 0, TV, TM, TC, MARCA, GRADE;
+const CEL = 0.25;
+
+function areaTri(t, o, cosl) {
+  return Math.abs((t[o + 2] - t[o]) * (t[o + 5] - t[o + 1]) - (t[o + 4] - t[o]) * (t[o + 3] - t[o + 1])) * cosl / 2;
+}
+
+async function carregar() {
+  const d = new Int32Array((await gunzipB64(DADOS.verts)).buffer);
+  const xy = new Float64Array(d.length);
+  for (let i = 0, x = 0, y = 0; i < d.length; i += 2) {
+    x += d[i]; y += d[i + 1]; xy[i] = x / 1e4; xy[i + 1] = y / 1e4;
+  }
+
+  let cap = 1 << 19;
+  TV = new Float32Array(cap * 6); TM = new Uint16Array(cap); TC = new Uint16Array(cap * NC);
+  let TA = new Float64Array(cap);
+  const guardar = (t, o, m, a) => {
+    if (NT === cap) {
+      cap *= 2;
+      const v2 = new Float32Array(cap * 6); v2.set(TV); TV = v2;
+      const m2 = new Uint16Array(cap); m2.set(TM); TM = m2;
+      const c2 = new Uint16Array(cap * NC); c2.set(TC); TC = c2;
+      const a2 = new Float64Array(cap); a2.set(TA); TA = a2;
+    }
+    for (let k = 0; k < 6; k++) TV[NT * 6 + k] = t[o + k];
+    TM[NT] = m; TA[NT] = a; NT++;
+  };
+
+  let v = 0;
+  DADOS.munis.forEach(([, , votos, estrutura], m) => {
+    const ini = NT;
+    const cosl = Math.cos(xy[v * 2 + 1] * RAD);
+    // Triangula cada polígono (exterior + buracos)
+    const fila = [];
+    for (const aneis of estrutura) {
+      const n = aneis.reduce((a, b) => a + b, 0);
+      const plano = xy.subarray(v * 2, (v + n) * 2);
+      const buracos = [];
+      for (let k = 0, acc = 0; k < aneis.length - 1; k++) buracos.push(acc += aneis[k]);
+      const idx = earcut(plano, buracos);
+      for (let k = 0; k < idx.length; k += 3)
+        fila.push([plano[idx[k] * 2], plano[idx[k] * 2 + 1], plano[idx[k + 1] * 2], plano[idx[k + 1] * 2 + 1],
+                   plano[idx[k + 2] * 2], plano[idx[k + 2] * 2 + 1]]);
+      v += n;
+    }
+    const tot = votos.reduce((a, b) => a + b, 0);
+    const area = fila.reduce((a, t) => a + areaTri(t, 0, cosl), 0);
+    if (!area) return;
+    const dens = tot / area;
+    // Divide pelo ponto médio do lado mais longo até cada triângulo ter poucos votos
+    while (fila.length) {
+      const t = fila.pop(), a = areaTri(t, 0, cosl);
+      if (a <= 0) continue;
+      if (a * dens <= VOTOS_MAX) { guardar(t, 0, m, a); continue; }
+      let k = 0, maior = -1;
+      for (let e = 0; e < 3; e++) {
+        const f = (e + 1) % 3;
+        const l = Math.hypot((t[f * 2] - t[e * 2]) * cosl, t[f * 2 + 1] - t[e * 2 + 1]);
+        if (l > maior) { maior = l; k = e; }
+      }
+      const p0 = k, p1 = (k + 1) % 3, p2 = (k + 2) % 3;
+      const mx = (t[p0 * 2] + t[p1 * 2]) / 2, my = (t[p0 * 2 + 1] + t[p1 * 2 + 1]) / 2;
+      fila.push([t[p0 * 2], t[p0 * 2 + 1], mx, my, t[p2 * 2], t[p2 * 2 + 1]],
+                [mx, my, t[p1 * 2], t[p1 * 2 + 1], t[p2 * 2], t[p2 * 2 + 1]]);
+    }
+    // Reparte os votos de cada candidato pela área (maiores restos: o total fecha exato)
+    const n = NT - ini, resto = new Float64Array(n), ordem = new Uint32Array(n);
+    for (let c = 0; c < NC; c++) {
+      let soma = 0;
+      for (let i = 0; i < n; i++) {
+        const q = votos[c] * TA[ini + i] / area, b = Math.floor(q);
+        TC[(ini + i) * NC + c] = b; resto[i] = q - b; soma += b; ordem[i] = i;
+      }
+      let falta = votos[c] - soma;
+      if (falta > 0) {
+        ordem.sort((a, b) => resto[b] - resto[a] || a - b);
+        for (let i = 0; i < falta; i++) TC[(ini + ordem[i]) * NC + c]++;
+      }
+    }
+  });
+
+  // Índice espacial: cada triângulo entra em todas as células da sua caixa
+  GRADE = new Map();
+  for (let i = 0; i < NT; i++) {
+    const o = i * 6;
+    const s = Math.min(TV[o + 1], TV[o + 3], TV[o + 5]), n = Math.max(TV[o + 1], TV[o + 3], TV[o + 5]);
+    const w = Math.min(TV[o], TV[o + 2], TV[o + 4]), e = Math.max(TV[o], TV[o + 2], TV[o + 4]);
+    for (let a = Math.floor((s + 40) / CEL); a <= Math.floor((n + 40) / CEL); a++)
+      for (let b = Math.floor((w + 80) / CEL); b <= Math.floor((e + 80) / CEL); b++) {
+        const k = a * 4096 + b;
+        let l = GRADE.get(k); if (!l) GRADE.set(k, l = []); l.push(i);
+      }
+  }
+  MARCA = new Uint32Array(NT);
+}
+
+let carimbo = 0;
+function triangulosNaCaixa(s, w, n, e, cb) {
+  const marca = ++carimbo; // um triângulo pode estar em várias células
+  for (let a = Math.floor((s + 40) / CEL); a <= Math.floor((n + 40) / CEL); a++)
+    for (let b = Math.floor((w + 80) / CEL); b <= Math.floor((e + 80) / CEL); b++) {
+      const l = GRADE.get(a * 4096 + b);
+      if (l) for (let j = 0; j < l.length; j++) {
+        const i = l[j];
+        if (MARCA[i] !== marca) { MARCA[i] = marca; cb(i); }
+      }
+    }
+}
+
+// ---------- sorteio determinístico ----------
+// Mesmo voto cai sempre no mesmo lugar, em qualquer zoom e em qualquer tile.
+function mix(h) {
+  h ^= h >>> 16; h = Math.imul(h, 0x7feb352d);
+  h ^= h >>> 15; h = Math.imul(h, 0x846ca68b);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+const hash = (a, b, c) => mix(mix(mix(a + 0x9e3779b9) ^ b) ^ (c * 0x632be5ab));
+const U32 = 4294967296;
+
+// ---------- desenho ----------
+const COR32 = CANDS.map(c => {
+  const r = parseInt(c.cor.slice(1, 3), 16), g = parseInt(c.cor.slice(3, 5), 16), b = parseInt(c.cor.slice(5, 7), 16);
+  return (255 << 24 | b << 16 | g << 8 | r) >>> 0;
+});
+
+function desenharTile(canvas, coords) {
+  const z = coords.z, escala = 256 * Math.pow(2, z);
+  const dpr = canvas.width / 256;
+  const ox = coords.x * 256, oy = coords.y * 256;
+  const lonDe = px => px / escala * 360 - 180;
+  const latDe = py => Math.atan(Math.sinh(Math.PI * (1 - 2 * py / escala))) / RAD;
+  const px = lo => (lo + 180) / 360 * escala - ox;
+  const py = la => { const s = Math.sin(la * RAD); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * escala - oy; };
+  const margem = 0.001;
+  const n = latDe(oy) + margem, s = latDe(oy + 256) - margem;
+  const w = lonDe(ox) - margem, e = lonDe(ox + 256) + margem;
+  const f = fracao(z);
+  const lado = Math.max(1, Math.round(tamanhoPonto(z) * dpr));
+
+  // Pontos do tile: x, y em pixels de tela, cor, e uma chave aleatória para a ordem de desenho
+  let cap = 65536, X = new Float32Array(cap), Y = new Float32Array(cap), K = new Uint8Array(cap), ORD = new Float64Array(cap), m = 0;
+  const crescer = () => {
+    cap *= 2;
+    const x2 = new Float32Array(cap); x2.set(X); X = x2;
+    const y2 = new Float32Array(cap); y2.set(Y); Y = y2;
+    const k2 = new Uint8Array(cap); k2.set(K); K = k2;
+    const o2 = new Float64Array(cap); o2.set(ORD); ORD = o2;
+  };
+
+  triangulosNaCaixa(s, w, n, e, i => {
+    const o = i * 6;
+    const ax = px(TV[o]), ay = py(TV[o + 1]), bx = px(TV[o + 2]), by = py(TV[o + 3]), cx = px(TV[o + 4]), cy = py(TV[o + 5]);
+    if (Math.max(ax, bx, cx) < -2 || Math.min(ax, bx, cx) > 258 || Math.max(ay, by, cy) < -2 || Math.min(ay, by, cy) > 258) return;
+    for (let c = 0; c < NC; c++) {
+      if (!visivel[c]) continue;
+      const v = TC[i * NC + c];
+      if (!v) continue;
+      const sem = i * NC + c;
+      // Arredondamento estocástico com sorteio fixo: cresce de forma monótona com o zoom
+      const k = Math.min(v, Math.floor(v * f + hash(sem, 0x7fffffff, 7) / U32));
+      for (let j = 0; j < k; j++) {
+        const r1 = Math.sqrt(hash(sem, j, 1) / U32), r2 = hash(sem, j, 2) / U32;
+        const wa = 1 - r1, wb = r1 * (1 - r2), wc = r1 * r2;
+        const x = wa * ax + wb * bx + wc * cx, y = wa * ay + wb * by + wc * cy;
+        if (x < -2 || x > 258 || y < -2 || y > 258) continue;
+        if (m === cap) crescer();
+        X[m] = x; Y[m] = y; K[m] = c;
+        ORD[m] = (hash(sem, j, 3) >>> 11) * 2097152 + m; // 21 bits para o índice
+        m++;
+      }
+    }
+  });
+
+  const ctx = canvas.getContext("2d");
+  if (!m) return;
+  const W = canvas.width, img = ctx.createImageData(W, W), pix = new Uint32Array(img.data.buffer);
+  const ord = ORD.subarray(0, m).sort();
+  const meio = lado / 2;
+  for (let q = 0; q < m; q++) {
+    const p = m < 2097152 ? ord[q] % 2097152 : q;
+    const x0 = Math.round(X[p] * dpr - meio), y0 = Math.round(Y[p] * dpr - meio);
+    const cor = COR32[K[p]];
+    for (let yy = Math.max(0, y0); yy < Math.min(W, y0 + lado); yy++) {
+      const base = yy * W;
+      for (let xx = Math.max(0, x0); xx < Math.min(W, x0 + lado); xx++) pix[base + xx] = cor;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// Município sob um ponto do mapa
+function municipioEm(lat, lng) {
+  const l = GRADE.get(Math.floor((lat + 40) / CEL) * 4096 + Math.floor((lng + 80) / CEL));
+  if (l) for (const i of l) {
+    const o = i * 6;
+    const d1 = (lng - TV[o + 2]) * (TV[o + 1] - TV[o + 3]) - (TV[o] - TV[o + 2]) * (lat - TV[o + 3]);
+    const d2 = (lng - TV[o + 4]) * (TV[o + 3] - TV[o + 5]) - (TV[o + 2] - TV[o + 4]) * (lat - TV[o + 5]);
+    const d3 = (lng - TV[o]) * (TV[o + 5] - TV[o + 1]) - (TV[o + 4] - TV[o]) * (lat - TV[o + 1]);
+    if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) return TM[i];
+  }
+  return -1;
+}
+
+const CamadaPontos = L.GridLayer.extend({
+  createTile(coords, done) {
+    const tile = document.createElement("canvas");
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    tile.width = tile.height = Math.round(256 * dpr);
+    tile.style.width = tile.style.height = "256px";
+    setTimeout(() => { desenharTile(tile, coords); done(null, tile); }, 0);
+    return tile;
+  },
+});
+
+// ---------- mapa ----------
+const mapa = L.map("mapa", {
+  zoomControl: false, minZoom: 4, maxZoom: 18, preferCanvas: true,
+  maxBounds: [[-38, -80], [8, -28]], maxBoundsViscosity: 0.8,
+}).fitBounds([[-33.8, -74], [5.3, -34.8]]);
+L.control.zoom({ position: "bottomright" }).addTo(mapa);
+// Embutido num iframe, a roda do mouse só dá zoom depois de um clique no mapa, para não prender a rolagem do site
+if (window.self !== window.top) {
+  mapa.scrollWheelZoom.disable();
+  mapa.once("click focus", () => mapa.scrollWheelZoom.enable());
+}
+// Em tela de toque, um dedo rola a página e dois dedos movem e aproximam o mapa,
+// para o mapa não atrapalhar a leitura. Um toque simples continua abrindo o resultado.
+if (matchMedia("(pointer: coarse)").matches) {
+  mapa.dragging.disable();
+  const aviso = document.getElementById("aviso-dedos");
+  let espera;
+  const el = mapa.getContainer();
+  el.addEventListener("touchmove", ev => {
+    if (ev.touches.length !== 1) { aviso.classList.add("oculto"); return; }
+    aviso.classList.remove("oculto");
+    clearTimeout(espera);
+    espera = setTimeout(() => aviso.classList.add("oculto"), 1200);
+  }, { passive: true });
+  el.addEventListener("touchend", ev => {
+    if (!ev.touches.length) { clearTimeout(espera); espera = setTimeout(() => aviso.classList.add("oculto"), 800); }
+  }, { passive: true });
+}
+
+const base = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19, className: "base-osm esmaecido",
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Votos: TSE 2026 · Malha: IBGE',
+}).addTo(mapa);
+
+let pontos;
+
+function atualizarEscala() {
+  const z = mapa.getZoom(), inv = 1 / fracao(z);
+  document.getElementById("escala").textContent =
+    inv <= 1 ? "1 ponto = 1 voto" : `1 ponto ≈ ${fmt.format(Math.round(inv))} votos`;
+  document.getElementById("escala-dica").textContent = inv <= 1
+    ? "Todos os votos estão no mapa."
+    : `Aproxime mais ${ZOOM_PLENO - z} nível${ZOOM_PLENO - z > 1 ? "is" : ""} de zoom para ver todos os votos.`;
+}
+
+function montarLegenda() {
+  const tot = DADOS.totais, soma = CANDS.reduce((a, c) => a + tot[c.id], 0);
+  const leg = document.getElementById("legenda"), barra = document.getElementById("barra");
+  CANDS.forEach((c, i) => {
+    const pct = tot[c.id] / soma * 100;
+    const lab = document.createElement("label");
+    lab.className = "cand"; lab.style.setProperty("--c", c.cor);
+    lab.innerHTML = `<input type="checkbox" id="cand-${c.id}" checked><span class="bola"></span>
+      <span class="nome">${c.nome}</span>
+      <span class="num"><b>${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</b>${fmt.format(tot[c.id])}</span>`;
+    lab.querySelector("input").addEventListener("change", ev => {
+      visivel[i] = ev.target.checked;
+      pontos && pontos.redraw();
+    });
+    leg.appendChild(lab);
+    const seg = document.createElement("span");
+    seg.style.setProperty("--c", c.cor); seg.style.width = pct + "%";
+    barra.appendChild(seg);
+  });
+}
+
+document.getElementById("esmaecer").addEventListener("change", ev => {
+  document.querySelectorAll(".base-osm").forEach(el => el.classList.toggle("esmaecido", ev.target.checked));
+  base.options.className = ev.target.checked ? "base-osm esmaecido" : "base-osm";
+});
+
+// Clique: resultado do estado
+mapa.on("click", ev => {
+  if (!NT) return;
+  const m = municipioEm(ev.latlng.lat, ev.latlng.lng);
+  if (m < 0) return;
+  const [nome, uf, votos] = DADOS.munis[m];
+  const tot = votos.reduce((a, b) => a + b, 0);
+  const linhas = CANDS.map((c, k) =>
+    `<tr><td><span class="bola" style="--c:${c.cor}"></span>${c.nome}</td><td>${fmt.format(votos[k])}</td><td>${(votos[k] / tot * 100).toFixed(1).replace(".", ",")}%</td></tr>`
+  ).join("");
+  L.popup().setLatLng(ev.latlng).setContent(
+    `<div class="pop"><h2>${nome}</h2><div class="onde">${uf} · votos nominais para presidente</div>
+     <table>${linhas}<tr><td><b>Total</b></td><td><b>${fmt.format(tot)}</b></td><td></td></tr></table></div>`
+  ).openOn(mapa);
+});
+
+mapa.on("zoomend", atualizarEscala);
+if (window.innerWidth < 600 || window.innerHeight < 560) document.getElementById("painel").open = false;
+montarLegenda();
+atualizarEscala();
+
+carregar().then(() => {
+  pontos = new CamadaPontos({ className: "pontos", updateWhenZooming: false, keepBuffer: 1, zIndex: 5 }).addTo(mapa);
+  document.getElementById("carregando").hidden = true;
+}).catch(err => {
+  document.getElementById("carregando").textContent = "Não foi possível ler os dados: " + err.message;
+});
+</script>
+</body>
+</html>

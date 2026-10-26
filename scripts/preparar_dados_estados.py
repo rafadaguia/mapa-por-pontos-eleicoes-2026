@@ -7,13 +7,12 @@ dados/estados.js no mesmo formato de dados/municipios.js, com uma "região" por 
 
 Malha: fontes/ufs_ibge.json (API de malhas v3 do IBGE, intrarregiao=UF, qualidade intermediária).
 """
-import base64, gzip, json
+import json
 from pathlib import Path
 
-import numpy as np
 from shapely.geometry import shape
 
-from preparar_dados import CATS, ler_municipios, ler_votos, poligonos
+from preparar_dados import CATS, escrever, ler_municipios, ler_votos, poligonos
 
 REPO = Path(__file__).resolve().parent.parent
 MALHA = REPO / "fontes" / "ufs_ibge.json"
@@ -31,10 +30,14 @@ UFS = {
 }
 
 
-def main():
-    votos = ler_votos()
+def gravar_estados(votos, cats, saida):
+    """Grava o arquivo de dados por UF.
+
+    votos: DataFrame indexado pelo código TSE do município, uma coluna por categoria de `cats`.
+    Os votos são somados por UF; o exterior fica de fora.
+    """
     muns = ler_municipios()
-    votos = votos[votos.index.isin(muns.index)]  # tira o exterior
+    votos = votos[votos.index.isin(muns.index)]
     por_uf = votos.groupby(muns.loc[votos.index, "uf"].to_numpy()).sum()
 
     munis, coords = [], []
@@ -46,20 +49,14 @@ def main():
             estrutura.append([len(a) for a in aneis])
             coords.extend(aneis)
         r = por_uf.loc[sigla]
-        munis.append([nome, sigla, [int(r[c]) for c in CATS], estrutura])
+        munis.append([nome, sigla, [int(r[c]) for c in cats], estrutura])
+    print("UFs:", len(munis))
 
-    # Coordenadas em décimos de milésimo de grau (~11 m), codificadas como diferenças
-    q = np.round(np.vstack(coords) * 1e4).astype(np.int64)
-    d = np.diff(q, axis=0, prepend=np.zeros((1, 2), np.int64)).astype("<i4")
-    verts_b64 = base64.b64encode(gzip.compress(d.tobytes(), 9)).decode()
-    print("UFs:", len(munis), "vértices:", len(q))
+    escrever(saida, {c: int(por_uf[c].sum()) for c in cats}, munis, coords)
 
-    totais = {c: int(por_uf[c].sum()) for c in CATS}
-    SAIDA.write_text(
-        f"window.DADOS={{totais:{json.dumps(totais)},"
-        f"munis:{json.dumps(munis, ensure_ascii=False, separators=(',', ':'))},"
-        f"verts:\"{verts_b64}\"}};\n")
-    print(totais, f"{SAIDA.stat().st_size / 1e6:.2f} MB")
+
+def main():
+    gravar_estados(ler_votos(), CATS, SAIDA)
 
 
 if __name__ == "__main__":
